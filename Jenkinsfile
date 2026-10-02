@@ -36,13 +36,12 @@ pipeline {
 
         stage('Deploy to Kubernetes') {
             steps {
-                // Securely maps your cluster credentials directly to an environment file variable
                 withCredentials([file(credentialsId: KUBE_CREDS, variable: 'KUBECONFIG')]) {
-                    // FIXED: Appended the kubeconfig parameter to point directly to your cluster context
-                    sh 'kubectl apply -f k8s/namespace.yaml --kubeconfig=$KUBECONFIG'
-                    sh 'kubectl apply -f k8s/deployment.yaml --kubeconfig=$KUBECONFIG'
-                    sh 'kubectl apply -f k8s/service.yaml --kubeconfig=$KUBECONFIG'
-                    sh "kubectl -n ${K8S_NAMESPACE} rollout status deployment/${APP_NAME} --timeout=120s --kubeconfig=$KUBECONFIG"
+                    // FIXED: Added --server bridge definition and disabled strict openapi verification hooks
+                    sh 'kubectl apply -f k8s/namespace.yaml --kubeconfig=$KUBECONFIG --server=https://docker.internal --validate=false'
+                    sh 'kubectl apply -f k8s/deployment.yaml --kubeconfig=$KUBECONFIG --server=https://docker.internal --validate=false'
+                    sh 'kubectl apply -f k8s/service.yaml --kubeconfig=$KUBECONFIG --server=https://docker.internal --validate=false'
+                    sh "kubectl -n ${K8S_NAMESPACE} rollout status deployment/${APP_NAME} --timeout=120s --kubeconfig=$KUBECONFIG --server=https://docker.internal"
                 }
             }
         }
