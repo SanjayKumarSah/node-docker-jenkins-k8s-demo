@@ -5,6 +5,7 @@ pipeline {
         APP_NAME      = 'node-docker-jenkins-k8s-demo'
         IMAGE         = 'node-docker-jenkins-k8s-demo:1.0'
         K8S_NAMESPACE = 'demo'
+        KUBE_CREDS    = 'k8s-kubeconfig' // Matches the credential ID
     }
 
     stages {
@@ -23,32 +24,32 @@ pipeline {
         stage('Test') {
             steps {
                 sh 'node --check src/server.js'
-                // Fixed inner quote escaping structure
                 sh "node -e \"import('./src/server.js').then(() => setTimeout(() => process.exit(0), 1000))\""
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                // FIXED: Changed single quotes to double quotes for variable injection
                 sh "docker build -t ${IMAGE} ."
             }
         }
 
         stage('Deploy to Kubernetes') {
             steps {
-                sh 'kubectl apply -f k8s/namespace.yaml'
-                sh 'kubectl apply -f k8s/deployment.yaml'
-                sh 'kubectl apply -f k8s/service.yaml'
-                // FIXED: Changed single quotes to double quotes for variables
-                sh "kubectl -n ${K8S_NAMESPACE} rollout status deployment/${APP_NAME} --timeout=120s"
+                // Securely maps your cluster credentials directly to an environment file variable
+                withCredentials([file(credentialsId: KUBE_CREDS, variable: 'KUBECONFIG')]) {
+                    // FIXED: Appended the kubeconfig parameter to point directly to your cluster context
+                    sh 'kubectl apply -f k8s/namespace.yaml --kubeconfig=$KUBECONFIG'
+                    sh 'kubectl apply -f k8s/deployment.yaml --kubeconfig=$KUBECONFIG'
+                    sh 'kubectl apply -f k8s/service.yaml --kubeconfig=$KUBECONFIG'
+                    sh "kubectl -n ${K8S_NAMESPACE} rollout status deployment/${APP_NAME} --timeout=120s --kubeconfig=$KUBECONFIG"
+                }
             }
         }
     }
 
     post {
         always {
-            // FIXED: Changed single quotes to double quotes
             sh "docker image ls ${IMAGE} || true"
         }
     }
