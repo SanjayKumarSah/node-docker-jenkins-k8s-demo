@@ -34,14 +34,14 @@ pipeline {
             }
         }
 
-                stage('Deploy to Kubernetes') {
+           stage('Deploy to Kubernetes') {
             steps {
                 withCredentials([file(credentialsId: KUBE_CREDS, variable: 'KUBECONFIG')]) {
-                    // FIXED: Restored the complete domain name and cluster port mapping address strings
-                    sh 'kubectl apply -f k8s/namespace.yaml --kubeconfig=$KUBECONFIG --server=https://docker.internal --validate=false'
-                    sh 'kubectl apply -f k8s/deployment.yaml --kubeconfig=$KUBECONFIG --server=https://docker.internal --validate=false'
-                    sh 'kubectl apply -f k8s/service.yaml --kubeconfig=$KUBECONFIG --server=https://docker.internal --validate=false'
-                    sh "kubectl -n ${K8S_NAMESPACE} rollout status deployment/${APP_NAME} --timeout=120s --kubeconfig=$KUBECONFIG --server=https://docker.internal"
+                    // Cleaner standard execution: references cluster settings directly from the secret file
+                    sh 'kubectl apply -f k8s/namespace.yaml --kubeconfig=$KUBECONFIG'
+                    sh 'kubectl apply -f k8s/deployment.yaml --kubeconfig=$KUBECONFIG'
+                    sh 'kubectl apply -f k8s/service.yaml --kubeconfig=$KUBECONFIG'
+                    sh "kubectl -n ${K8S_NAMESPACE} rollout status deployment/${APP_NAME} --timeout=120s --kubeconfig=$KUBECONFIG"
                 }
             }
         }
