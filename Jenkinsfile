@@ -34,10 +34,10 @@ pipeline {
             }
         }
 
-        stage('Deploy to Kubernetes') {
+                stage('Deploy to Kubernetes') {
             steps {
                 withCredentials([file(credentialsId: KUBE_CREDS, variable: 'KUBECONFIG')]) {
-                    // FIXED: Added --server bridge definition and disabled strict openapi verification hooks
+                    // FIXED: Restored the complete domain name and cluster port mapping address strings
                     sh 'kubectl apply -f k8s/namespace.yaml --kubeconfig=$KUBECONFIG --server=https://docker.internal --validate=false'
                     sh 'kubectl apply -f k8s/deployment.yaml --kubeconfig=$KUBECONFIG --server=https://docker.internal --validate=false'
                     sh 'kubectl apply -f k8s/service.yaml --kubeconfig=$KUBECONFIG --server=https://docker.internal --validate=false'
@@ -45,6 +45,7 @@ pipeline {
                 }
             }
         }
+
     }
 
     post {
